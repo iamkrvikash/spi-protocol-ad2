@@ -32,18 +32,20 @@ if hdwf.value == 0:
 print('Connected with Analog Discovey 2')
 
 hzSys = c_double()
-dwf.FDwfDigitalOutInternalClockInfo(hdwf, byref(hzSys))
+dwf.FDwfDigitalOutInternalClockInfo(hdwf, byref(hzSys))#fetches the internal clock frequency and stores it in hzSys
 print(hzSys)
 # SPI parameters
-CPOL = 1 # or 1
-CPHA = 1 # or 1
-hzFreq = 1e6
+CPOL = 1 # Clock Polarity
+CPHA = 1 # Clock Phase
+hzFreq = 1e6 
 cBits = 16
-rgdData = (2*c_byte)(*[0x87,0x88])
-def hold_first():
+rgdData = (2*c_byte)(*[0x99,0x99])#Data sent for write is stored in rgdData by c byte array which is of length 2
+print(rgdData)
+print(*rgdData)
+def hold_first(): #function to set Select Signal high
 	print('Hold Start After 0.5s')
 	# serialization time length
-	dwf.FDwfDigitalOutRunSet(hdwf, c_double(0.1))
+	dwf.FDwfDigitalOutRunSet(hdwf, c_double(0.1))#Sets the Select signal Low for 0.1 sec
 	# DIO 2 Select 
 	dwf.FDwfDigitalOutEnableSet(hdwf, c_int(2), c_int(1))
 	# output high while DigitalOut not running
@@ -53,16 +55,16 @@ def hold_first():
 	dwf.FDwfDigitalOutCounterSet(hdwf, c_int(2), c_int(0), c_int(0))
 
 	dwf.FDwfDigitalOutConfigure(hdwf, c_int(1))
-	time.sleep(5)
+	time.sleep(1)#Sets the Select high initially for 1 second
 
-def run_ad2():
+def run_ad2(): #Function to generate SPI signal
   print('In 2nd Part')
   dwf.FDwfDigitalOutRunSet(hdwf, c_double(17e-6))
   # DIO 2 Select
   dwf.FDwfDigitalOutEnableSet(hdwf, c_int(2), c_int(1))
   # set prescaler twice of SPI frequency
   dwf.FDwfDigitalOutDividerSet(hdwf, c_int(2), c_int(int(hzSys.value/hzFreq/0.5)))
-  # 1 tick low, 1 tick high
+  # 14 tick low, 2 tick high
   dwf.FDwfDigitalOutCounterSet(hdwf, c_int(2), c_int(14), c_int(2))
 
   # DIO 1 Clock
@@ -84,7 +86,7 @@ def run_ad2():
   dwf.FDwfDigitalOutDataSet(hdwf, c_int(0), byref(rgdData), c_int(cBits))
   dwf.FDwfDigitalOutConfigure(hdwf, c_int(1))
   print("Generating SPI signal")
-  time.sleep(17e-6)
-  
+  time.sleep(17e-6)#Running the function for 17 micro secs
+
 hold_first()
 run_ad2()
